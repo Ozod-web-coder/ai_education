@@ -1,0 +1,18 @@
+from django.contrib import admin
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+# Всё, что относится к конкретному учебному центру: /api/c/<slug>/...
+center_api = [
+    path("", include("apps.catalog.urls")),
+    path("", include("apps.leads.urls")),
+    path("", include("apps.booking.urls")),
+]
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/auth/", include("apps.core.urls")),
+    path("api/c/<slug:center_slug>/", include(center_api)),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+]
