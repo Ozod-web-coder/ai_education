@@ -11,7 +11,7 @@ class BranchInline(admin.TabularInline):
 
 @admin.register(Center)
 class CenterAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "default_language", "is_active", "created_at")
+    list_display = ("name", "slug", "admin_phone", "default_language", "is_active", "created_at")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [BranchInline]
 
