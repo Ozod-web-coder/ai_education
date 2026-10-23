@@ -22,6 +22,22 @@ import Squiggle from "./Squiggle";
 import StatusPill from "./StatusPill";
 import { Message, Splash } from "./States";
 
+const NOTIFY_REASONS = {
+  no_telegram: "у ученика нет Telegram",
+  blocked: "ученик заблокировал бота",
+  no_bot: "у центра не задан токен бота",
+  error: "Telegram не ответил",
+};
+
+/** Что показать администратору после «Отказался»: дошло ли сообщение ученику. */
+function declineOutcome(data) {
+  const note = data.student_notification;
+  if (!note) return { text: "Статус обновлён", kind: "ok" };
+  if (note.sent) return { text: "Статус обновлён, ученику отправлено уведомление", kind: "ok" };
+  const reason = NOTIFY_REASONS[note.reason] || "ошибка отправки";
+  return { text: `Статус обновлён, но ученика не удалось уведомить: ${reason}. Позвоните ему.`, kind: "warn" };
+}
+
 function Tile({ icon: Icon, label, children, href, onClick }) {
   const body = (
     <>
@@ -43,13 +59,14 @@ export default function DetailScreen({ id, courses, inTelegram, onBack, onChange
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
+  const [askDecline, setAskDecline] = useState(false);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef();
 
   const showToast = useCallback((text, kind = "ok") => {
     setToast({ text, kind });
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
+    toastTimer.current = setTimeout(() => setToast(null), kind === "ok" ? 2600 : 6000);
   }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
@@ -71,14 +88,15 @@ export default function DetailScreen({ id, courses, inTelegram, onBack, onChange
     window.scrollTo(0, 0);
   }, [load]);
 
-  async function mutate(action, successText) {
+  async function mutate(action, success) {
     setBusy(true);
     try {
       const data = await action();
       setLead(data);
       setNote(data.manager_note);
-      haptic("success");
-      showToast(successText);
+      const outcome = typeof success === "function" ? success(data) : { text: success, kind: "ok" };
+      haptic(outcome.kind === "ok" ? "success" : "warning");
+      showToast(outcome.text, outcome.kind);
       onChanged();
     } catch (e) {
       haptic("error");
@@ -86,6 +104,11 @@ export default function DetailScreen({ id, courses, inTelegram, onBack, onChange
     } finally {
       setBusy(false);
     }
+  }
+
+  async function declineAndNotify() {
+    await mutate(() => updateLead(id, { status: "declined" }), declineOutcome);
+    setAskDecline(false);
   }
 
   async function remove() {
@@ -247,7 +270,12 @@ export default function DetailScreen({ id, courses, inTelegram, onBack, onChange
               className={`chip chip-status ${lead.status === s.value ? "chip-active" : ""}`}
               aria-pressed={lead.status === s.value}
               disabled={busy}
-              onClick={() => s.value !== lead.status && mutate(() => updateLead(id, { status: s.value }), "Статус обновлён")}
+              onClick={() => {
+                if (s.value === lead.status) return;
+                // «Отказался» отправляет ученику сообщение, поэтому сначала спрашиваем.
+                if (s.value === "declined") setAskDecline(true);
+                else mutate(() => updateLead(id, { status: s.value }), "Статус обновлён");
+              }}
             >
               {lead.status === s.value && <Check size={14} aria-hidden="true" />}
               {s.label}
@@ -328,11 +356,24 @@ export default function DetailScreen({ id, courses, inTelegram, onBack, onChange
         </div>
       )}
 
+      {askDecline && (
+        <ConfirmSheet
+          title="Отметить «Отказался»?"
+          text="Ученику в Telegram придёт уведомление: запись на пробный урок отменена, а если он отказался по ошибке, пусть позвонит администрации. Действующие записи в группы будут отменены, места освободятся."
+          confirmLabel="Отметить и уведомить"
+          busyLabel="Отправляем…"
+          busy={busy}
+          onConfirm={declineAndNotify}
+          onCancel={() => !busy && setAskDecline(false)}
+        />
+      )}
+
       {askDelete && (
         <ConfirmSheet
           title={`Удалить заявку «${lead.name || "Без имени"}»?`}
           text="Записи ученика в группы тоже удалятся, а занятые места освободятся. Отменить это нельзя."
           confirmLabel="Удалить"
+          busyLabel="Удаляем…"
           busy={busy}
           onConfirm={remove}
           onCancel={() => !busy && setAskDelete(false)}

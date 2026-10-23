@@ -22,6 +22,12 @@ class Center(models.Model):
         blank=True,
         help_text="Нужен для проверки initData из Mini App этого центра.",
     )
+    admin_phone = models.CharField(
+        "телефон администрации",
+        max_length=32,
+        blank=True,
+        help_text="Показывается ученику в уведомлении, если администратор отметил отказ от записи.",
+    )
     default_language = models.CharField(
         "язык по умолчанию", max_length=2, choices=Language.choices, default=Language.RU
     )

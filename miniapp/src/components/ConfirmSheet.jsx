@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-/** Нижняя шторка подтверждения опасного действия. */
-export default function ConfirmSheet({ title, text, confirmLabel, busy, onConfirm, onCancel }) {
+/** Нижняя шторка подтверждения действия, которое нельзя тихо отменить. */
+export default function ConfirmSheet({ title, text, confirmLabel, busyLabel = "Подождите…", busy, onConfirm, onCancel }) {
   useEffect(() => {
     const onKey = (event) => event.key === "Escape" && onCancel();
     window.addEventListener("keydown", onKey);
@@ -20,7 +20,7 @@ export default function ConfirmSheet({ title, text, confirmLabel, busy, onConfir
             Отмена
           </button>
           <button className="btn btn-danger" onClick={onConfirm} disabled={busy}>
-            {busy ? "Удаляем…" : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

@@ -236,7 +236,7 @@ def confirm_booking(booking: Booking, now: datetime | None = None) -> Booking:
 
 
 @transaction.atomic
-def cancel_booking(booking: Booking) -> Booking:
+def cancel_booking(booking: Booking, *, by_student: bool = True) -> Booking:
     booking = Booking.objects.select_for_update(of=("self",)).select_related("lead", "group").get(pk=booking.pk)
     if booking.status in (Booking.Status.CANCELLED, Booking.Status.EXPIRED):
         return booking
@@ -245,7 +245,7 @@ def cancel_booking(booking: Booking) -> Booking:
     booking.expires_at = None
     booking.save(update_fields=["status", "expires_at", "updated_at"])
 
-    if was_confirmed:
+    if was_confirmed and by_student:
         # Менеджер должен узнать об отмене подтверждённой записи (пробного занятия).
         lead = booking.lead
         note = f"{timezone.localdate():%d.%m.%Y}: ученик отменил запись в «{booking.group.name}»"

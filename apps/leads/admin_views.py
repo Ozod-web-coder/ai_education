@@ -12,6 +12,7 @@ from apps.core.permissions import IsCenterStaff
 from .admin_serializers import BEFORE_CONFIRMATION, AdminLeadDetailSerializer, AdminLeadSerializer
 from .duplicates import duplicate_map
 from .models import Lead
+from .services import decline_lead
 
 
 class LeadPagination(PageNumberPagination):
@@ -82,6 +83,20 @@ class AdminLeadViewSet(
             or needle in (phone or "")
             or (tg_needle and tg_needle in (username or "").casefold())
         ]
+
+    def update(self, request, *args, **kwargs):
+        self.student_notification = None
+        response = super().update(request, *args, **kwargs)
+        if self.student_notification is not None:
+            response.data["student_notification"] = self.student_notification
+        return response
+
+    def perform_update(self, serializer):
+        was_declined = serializer.instance.status == Lead.Status.DECLINED
+        lead = serializer.save()
+        # Уведомляем один раз при переходе в «Отказался», а не при каждом сохранении заявки.
+        if lead.status == Lead.Status.DECLINED and not was_declined:
+            self.student_notification = decline_lead(lead)
 
     @extend_schema(
         parameters=[
