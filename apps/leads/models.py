@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from apps.catalog.models import Level
+from apps.catalog.models import Course, Level
 from apps.core.models import Branch, Center
 
 ADULT_AGE = 18
@@ -16,6 +16,12 @@ class Lead(models.Model):
         BOOKED = "booked", "Записан"
         NEEDS_MANAGER = "needs_manager", "Нужен менеджер"
         LOST = "lost", "Потерян"
+        # Статусы администратора (Mini App для сотрудников центра).
+        CONFIRMED = "confirmed", "Подтверждена"
+        ATTENDED = "attended", "Пришёл"
+        NO_SHOW = "no_show", "Не пришёл"
+        ENROLLED = "enrolled", "Записан на курс"
+        DECLINED = "declined", "Отказался"
 
     center = models.ForeignKey(Center, on_delete=models.CASCADE, related_name="leads")
     user = models.ForeignKey(
@@ -39,6 +45,18 @@ class Lead(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
     source = models.CharField("источник", max_length=50, default="telegram")
     manager_note = models.TextField("заметка для менеджера", blank=True)
+    desired_course = models.ForeignKey(
+        Course,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="желаемый курс",
+        help_text="Если пусто, курс берётся из последней записи в группу.",
+    )
+    contacted_at = models.DateTimeField(
+        "связались с учеником", null=True, blank=True, help_text="Когда администратор подтвердил заявку."
+    )
 
     parent_name = models.CharField("имя родителя", max_length=100, blank=True)
     parent_phone = models.CharField("телефон родителя", max_length=20, blank=True)

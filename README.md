@@ -54,6 +54,13 @@ DATABASE_URL=postgres://postgres:ПАРОЛЬ@localhost:5432/ai_education
 | GET/POST | `/api/c/<center>/bookings/` | мои записи / забронировать `{group, trial_at, waitlist}` |
 | POST | `/api/c/<center>/bookings/<id>/confirm/` | подтвердить бронь |
 | POST | `/api/c/<center>/bookings/<id>/cancel/` | отменить |
+| GET/PATCH/DELETE, POST `confirm/` | `/api/c/<center>/admin/leads/` | заявки для администратора (только сотрудники центра), см. [miniapp/README.md](miniapp/README.md) |
+
+## Mini App администратора (`miniapp/`)
+
+React + Vite. Сотрудники центра смотрят заявки, меняют статусы (новая, подтверждена, пришёл, не пришёл, записан на курс, отказался), ищут и фильтруют, подтверждают связь с учеником и удаляют ошибочные заявки. Повторные заявки (тот же телефон или @username) помечаются предупреждением. Запуск и подключение к Telegram: [miniapp/README.md](miniapp/README.md).
+
+Доступ получают пользователи с галочкой «Сотрудник», заполненными «Центр» и «Telegram id» (админка Django). Адрес приложения нужно добавить в `CORS_ALLOWED_ORIGINS` в `.env`.
 
 ## ИИ-консультант и тест уровня
 

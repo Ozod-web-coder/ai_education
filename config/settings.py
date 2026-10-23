@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "corsheaders",
     "drf_spectacular",
     "apps.core",
     "apps.catalog",
@@ -34,6 +35,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -108,6 +110,9 @@ TELEGRAM_INIT_DATA_MAX_AGE = env.int("TELEGRAM_INIT_DATA_MAX_AGE", default=86400
 BOOKING_HOLD_MINUTES = env.int("BOOKING_HOLD_MINUTES", default=15)
 # HTTPS-адрес фронта Mini App. Пока пусто — бот не показывает кнопку приложения.
 MINI_APP_URL = env("MINI_APP_URL", default="")
+
+# Адреса, с которых Mini App ходит в API (через запятую), например https://app.example.com.
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 
 # ИИ-консультант: любой OpenAI-совместимый API (см. apps/assistant/llm.py).
 LLM_BASE_URL = env("LLM_BASE_URL", default="")

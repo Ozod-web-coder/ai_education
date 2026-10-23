@@ -6,3 +6,13 @@ db.sqlite3
 .pytest_cache/
 staticfiles/
 media/
+
+# IDE
+.idea/
+.vscode/
+
+# Mini App (miniapp/)
+node_modules/
+miniapp/dist/
+miniapp/.env
+miniapp/.env.local
