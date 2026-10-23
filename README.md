@@ -30,6 +30,22 @@ pytest
 DATABASE_URL=postgres://postgres:ПАРОЛЬ@localhost:5432/ai_education
 ```
 
+### Supabase
+
+В Supabase откройте проект → **Connect** → вкладка **Session pooler** и скопируйте строку. Она выглядит так:
+
+```
+DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<ПАРОЛЬ>@aws-0-<РЕГИОН>.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+- **Не берите «Direct connection»** (`db.<PROJECT_REF>.supabase.co`): он работает только по IPv6. Без IPv6 (домашний интернет, многие хостинги) будет ошибка вроде `could not translate host name` или `Network is unreachable`. Session pooler работает по IPv4.
+- Логин у pooler с суффиксом: `postgres.<PROJECT_REF>`, а не просто `postgres`.
+- Порт `5432` (Session pooler). Порт `6543` (Transaction pooler) для Django не подходит без доп. настроек.
+- Спецсимволы в пароле кодируйте: `@` → `%40`, `&` → `%26`, `#` → `%23`, `/` → `%2F`, `:` → `%3A`, `%` → `%25`. Или задайте в Supabase пароль только из букв и цифр.
+- Строка с паролем лежит только в `.env`, он в `.gitignore`. В репозиторий и в чаты её не отправляйте.
+
+После подключения создайте таблицы: `python manage.py migrate`, затем `python manage.py createsuperuser`.
+
 ## Приложения
 
 | Приложение | Что внутри |
