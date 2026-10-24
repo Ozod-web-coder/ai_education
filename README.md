@@ -4,14 +4,13 @@
 
 ## Из чего состоит проект
 
-| Часть | Папка | Что это | Где работает |
-|---|---|---|---|
-| Backend | `config/`, `apps/` | Django + DRF: API, админка, вся логика записи | локально или **Vercel** |
-| Telegram-бот | `bot/` | aiogram 3, long polling, работает с той же базой | локально или **сервер с постоянным процессом** (не Vercel) |
-| Mini App администратора | `miniapp/` | React + Vite: заявки, статусы, поиск | локально или **Vercel** (статика) |
-| База данных | | SQLite (локально) или PostgreSQL, например **Supabase** | |
+| Часть | Папка | Что это |
+|---|---|---|
+| Backend | `config/`, `apps/` | Django + DRF: API, админка, вся логика записи |
+| Telegram-бот | `bot/` | aiogram 3, long polling, работает с той же базой |
+| Mini App администратора | `miniapp/` | React + Vite: заявки, статусы, поиск |
 
-Бот и backend не общаются по сети: бот напрямую использует модели Django и ту же базу, поэтому **им нужен один и тот же `DATABASE_URL`**.
+Бот и backend не общаются по сети: бот напрямую использует модели Django и ту же базу, поэтому запускайте их из одной папки проекта и с одним `.env`.
 
 ## Быстрый старт на своём компьютере
 
@@ -73,97 +72,43 @@ pytest
 
 ## Переменные окружения
 
-Локально лежат в `.env` (он в `.gitignore`), на хостингах задаются в настройках проекта.
+Лежат в файле `.env` в корне проекта (он в `.gitignore`). Образец: `.env.example`.
 
-| Переменная | Нужна | Для чего |
-|---|---|---|
-| `SECRET_KEY` | backend, бот | секретный ключ Django. **Обязательна везде**, без неё ничего не запустится |
-| `DATABASE_URL` | backend, бот | адрес базы. Пусто = SQLite. **На Vercel обязательна** |
-| `DEBUG` | backend | `True` только локально. По умолчанию `False` |
-| `ALLOWED_HOSTS` | backend | свои домены через запятую (`localhost,127.0.0.1` по умолчанию). Адреса `*.vercel.app` добавляются сами |
-| `CSRF_TRUSTED_ORIGINS` | backend | свой домен с HTTPS, например `https://api.example.com` (для `*.vercel.app` не нужна) |
-| `CORS_ALLOWED_ORIGINS` | backend | адреса Mini App через запятую, без `/` в конце |
-| `MINI_APP_URL` | бот | адрес Mini App для кнопки «Открыть приложение» в боте |
-| `CENTER_SLUG` | бот | slug центра, чей токен использует бот (по умолчанию `demo`) |
-| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_FALLBACK_MODELS`, `LLM_WRITING_MODEL` | бот | ИИ-консультант, примеры в `.env.example` |
-| `TELEGRAM_INIT_DATA_MAX_AGE`, `BOOKING_HOLD_MINUTES` | backend, бот | сроки жизни входа и брони (есть значения по умолчанию) |
+| Переменная | Для чего |
+|---|---|
+| `SECRET_KEY` | секретный ключ Django. **Обязательна**, без неё ничего не запустится |
+| `DEBUG` | `True` для локальной разработки. По умолчанию `False` |
+| `ALLOWED_HOSTS` | допустимые адреса (`localhost,127.0.0.1` по умолчанию) |
+| `DATABASE_URL` | адрес базы. Пусто = SQLite (`db.sqlite3`), для локальной работы этого достаточно |
+| `CORS_ALLOWED_ORIGINS` | адреса Mini App через запятую, например `http://localhost:5173` |
+| `MINI_APP_URL` | адрес Mini App для кнопки «Открыть приложение» в боте |
+| `CENTER_SLUG` | slug центра для бота (по умолчанию `demo`) |
+| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_FALLBACK_MODELS`, `LLM_WRITING_MODEL` | ИИ-консультант, примеры в `.env.example` |
+| `TELEGRAM_INIT_DATA_MAX_AGE`, `BOOKING_HOLD_MINUTES` | сроки жизни входа и брони (есть значения по умолчанию) |
 
-Для Mini App отдельные переменные `VITE_API_URL`, `VITE_CENTER_SLUG` (см. `miniapp/.env.example`).
+Для Mini App отдельный файл `miniapp/.env`: `VITE_CENTER_SLUG` и `VITE_API_URL` (см. `miniapp/.env.example`).
 
 ## База данных
 
-Пока `DATABASE_URL` не задан, используется SQLite (`db.sqlite3`). Для PostgreSQL добавьте в `.env`:
+По умолчанию используется SQLite, ничего настраивать не нужно. Чтобы работать с PostgreSQL, добавьте в `.env`:
 
 ```
 DATABASE_URL=postgres://postgres:ПАРОЛЬ@localhost:5432/ai_education
 ```
 
-### Supabase
-
-В Supabase откройте проект → **Connect** → вкладка **Session pooler** и скопируйте строку. Она выглядит так:
-
-```
-DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<ПАРОЛЬ>@aws-0-<РЕГИОН>.pooler.supabase.com:5432/postgres?sslmode=require
-```
-
-- **Не берите «Direct connection»** (`db.<PROJECT_REF>.supabase.co`): он работает только по IPv6. Без IPv6 (домашний интернет, многие хостинги) будет ошибка `failed to resolve host` / `getaddrinfo failed`. Session pooler работает по IPv4.
-- Логин у pooler с суффиксом: `postgres.<PROJECT_REF>`, а не просто `postgres`.
-- Порт `5432` (Session pooler). Порт `6543` (Transaction pooler) для Django не подходит без доп. настроек.
-- Спецсимволы в пароле кодируйте: `@` → `%40`, `&` → `%26`, `#` → `%23`, `/` → `%2F`, `:` → `%3A`, `%` → `%25`. Или задайте в Supabase пароль только из букв и цифр.
-- Строка с паролем лежит только в `.env` и в настройках хостинга. В репозиторий и в чаты её не отправляйте.
-
-Таблицы создаются командой `python manage.py migrate` (запускайте её со своего компьютера с `DATABASE_URL` от Supabase в `.env`). Потом `createsuperuser` и `seed_demo`.
-
-## Деплой
-
-Схема: **backend и Mini App на Vercel, бот на сервере с постоянным процессом, база в Supabase.**
-
-### Backend на Vercel
-
-1. Vercel → **Add New → Project** → импортируйте репозиторий. **Root Directory оставьте пустым** (корень репозитория). Vercel сам определит Django по `manage.py`.
-2. До первого деплоя откройте **Settings → Environment Variables** и добавьте (для всех окружений: Production, Preview, Development):
-   - `SECRET_KEY`: свой случайный ключ;
-   - `DATABASE_URL`: строка Session pooler из Supabase.
-
-   Эти переменные нужны уже **при сборке**: Vercel загружает настройки Django и запускает `collectstatic`. Без `SECRET_KEY` сборка падает.
-3. Нажмите **Deploy**. Миграции Vercel не выполняет: сделайте их со своего компьютера (`python manage.py migrate`, раздел «Supabase»).
-4. Проверьте `https://<проект>.vercel.app/api/docs/` и `/admin/`.
-5. Рекомендация: в **Settings → Functions** выберите регион рядом с регионом базы Supabase, так запросы быстрее.
-
-### Mini App на Vercel
-
-1. Ещё один проект в Vercel из того же репозитория, **Root Directory: `miniapp`** (Vite определится сам).
-2. Переменные: `VITE_API_URL=https://<backend>.vercel.app/api` и `VITE_CENTER_SLUG=<slug центра>`. Они вшиваются при сборке, после изменения нужен новый деплой.
-3. Адрес Mini App добавьте в backend: `CORS_ALLOWED_ORIGINS=https://<miniapp>.vercel.app` и сделайте Redeploy backend.
-4. В @BotFather: `/mybots` → бот → Bot Settings → Menu Button → адрес Mini App.
-5. Сотрудников добавьте в админке (`is_staff`, центр, Telegram id), см. [miniapp/README.md](miniapp/README.md).
-
-### Бот на сервере
-
-Бот работает через long polling: это процесс, который крутится постоянно. **На Vercel он работать не может**: функции Vercel живут только пока идёт запрос. Бот также хранит состояние диалога в памяти процесса. Нужен хостинг с постоянными процессами: Railway, Render (тип **Background Worker**), Fly.io, Koyeb или свой VPS. Условия бесплатных тарифов у них меняются, проверьте на сайтах.
-
-В репозитории есть `Dockerfile` и `Procfile`. Любой из этих хостингов соберёт бота из репозитория:
-
-- команда запуска: `python -m bot` (в `Procfile` и `Dockerfile` она уже есть);
-- переменные: `SECRET_KEY`, `DATABASE_URL` (тот же, что у backend), `CENTER_SLUG`, `MINI_APP_URL`, `LLM_*`;
-- токен бота должен быть записан в центр в базе (поле «Токен Telegram-бота» в админке или `seed_demo --bot-token`).
+и выполните `python manage.py migrate`.
 
 ## Частые ошибки
 
-| Ошибка | Причина и решение |
+| Ошибка | Что делать |
 |---|---|
-| `KeyError: 'SECRET_KEY'` / «Не задана переменная SECRET_KEY» при сборке на Vercel | не заданы переменные окружения. Добавьте `SECRET_KEY` и `DATABASE_URL` в Settings → Environment Variables и нажмите Redeploy |
-| `PYTHON_ENTRYPOINT_NOT_FOUND`: «Found app.py but it does not export a top-level "app"» | Vercel принял `bot/app.py` за веб-приложение. Бот на Vercel не запускают: разверните его по разделу «Бот на сервере». Backend деплойте из корня репозитория |
-| «На Vercel нужна внешняя база» | не задан `DATABASE_URL`. SQLite на Vercel не работает |
-| `failed to resolve host 'db….supabase.co'`, `getaddrinfo failed` | взят Direct connection (IPv6). Возьмите Session pooler, раздел «Supabase» |
-| `Tenant or user not found` | в строке Supabase неверный логин (нужен `postgres.<PROJECT_REF>`) или регион |
-| `password authentication failed` | неверный пароль или спецсимволы в нём не закодированы |
-| `DisallowedHost` | свой домен не в `ALLOWED_HOSTS` |
-| `CSRF verification failed` при входе в админку на своём домене | добавьте домен в `CSRF_TRUSTED_ORIGINS` (с `https://`) |
-| В Mini App «Нет доступа» | аккаунт не сотрудник: админка → пользователь → `is_staff`, центр, Telegram id |
-| В консоли браузера ошибка CORS | адрес Mini App не в `CORS_ALLOWED_ORIGINS` backend |
-| Бот: `409 Conflict: terminated by other getUpdates request` | тот же токен запущен ещё где-то. Оставьте один процесс |
-| Бот: «У центра не задан bot_token» | `python manage.py seed_demo --bot-token <токен>` или поле в админке центра |
+| «Не задана переменная SECRET_KEY» | создайте `.env` (`copy .env.example .env`) и впишите `SECRET_KEY` |
+| Бот: `409 Conflict: terminated by other getUpdates request` | этот токен уже запущен в другом месте. Оставьте один процесс |
+| Бот: «У центра не задан bot_token» | `python manage.py seed_demo --bot-token <токен>` или поле «Токен Telegram-бота» в админке центра |
+| В Mini App «Откройте из Telegram» | страница открыта в обычном браузере. Для проверки без Telegram см. [miniapp/README.md](miniapp/README.md) |
+| В Mini App «Нет доступа» | аккаунт не сотрудник: админка → пользователь → «Сотрудник», центр и Telegram id |
+| В Mini App «Нет связи с …» или ошибка CORS | запущен ли backend; адрес Mini App должен быть в `CORS_ALLOWED_ORIGINS` в `.env` (затем перезапустите backend) |
+| В Mini App «Не удалось войти» | `VITE_CENTER_SLUG` должен совпадать со slug центра |
 
 ## Приложения
 
