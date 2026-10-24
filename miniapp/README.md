@@ -49,7 +49,7 @@ npm run build            # статика в miniapp/dist
 
 ## Подключение к Telegram
 
-1. Выложите `miniapp/dist` на любой хостинг с HTTPS (Vercel, Netlify, Cloudflare Pages, nginx).
+1. Выложите приложение на хостинг с HTTPS. На Vercel: новый проект из этого репозитория с **Root Directory `miniapp`** (команды сборки определятся сами). Подойдут и Netlify, Cloudflare Pages, nginx (`miniapp/dist`).
 2. При сборке задайте `VITE_API_URL=https://api.example.com/api` и `VITE_CENTER_SLUG=<код центра>`.
 3. В `.env` бэкенда добавьте адрес приложения в `CORS_ALLOWED_ORIGINS` и в `ALLOWED_HOSTS` адрес API.
 4. В @BotFather: `/mybots` → бот → Bot Settings → Menu Button → укажите адрес Mini App.
