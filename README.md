@@ -160,6 +160,10 @@ DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<ПАРОЛЬ>@aws-0-<РЕГИ�
 | `password authentication failed` | неверный пароль или спецсимволы в нём не закодированы |
 | `DisallowedHost` | свой домен не в `ALLOWED_HOSTS` |
 | `CSRF verification failed` при входе в админку на своём домене | добавьте домен в `CSRF_TRUSTED_ORIGINS` (с `https://`) |
+| В Mini App «Нет связи с …» | браузер не достучался до backend. Проверьте `VITE_API_URL` (полный адрес `https://<backend>.vercel.app/api`, задаётся при сборке: после правки нужен Redeploy Mini App) и добавьте адрес Mini App в `CORS_ALLOWED_ORIGINS` backend (без `/` в конце), затем Redeploy backend |
+| В Mini App «… ответил не как API (HTTP 404)» | `VITE_API_URL` не задан или указывает не на backend (без него запросы идут на сам Mini App) |
+| В Mini App «Не удалось войти» | `VITE_CENTER_SLUG` не совпадает со slug центра, либо Mini App открыт не из того бота, чей токен записан в центре |
+| В Mini App «Откройте из Telegram» | страница открыта в обычном браузере. Открывайте через кнопку меню бота |
 | В Mini App «Нет доступа» | аккаунт не сотрудник: админка → пользователь → `is_staff`, центр, Telegram id |
 | В консоли браузера ошибка CORS | адрес Mini App не в `CORS_ALLOWED_ORIGINS` backend |
 | Бот: `409 Conflict: terminated by other getUpdates request` | тот же токен запущен ещё где-то. Оставьте один процесс |
