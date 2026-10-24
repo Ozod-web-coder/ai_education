@@ -8,7 +8,11 @@ import os
 
 def main():
     parser = argparse.ArgumentParser(description="Telegram-бот AI Education")
-    parser.add_argument("--center", default="demo", help="slug учебного центра (токен бота берётся из него)")
+    parser.add_argument(
+        "--center",
+        default=os.environ.get("CENTER_SLUG", "demo"),
+        help="slug учебного центра (токен бота берётся из него); по умолчанию переменная CENTER_SLUG",
+    )
     args = parser.parse_args()
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")

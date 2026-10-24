@@ -2,15 +2,34 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("SECRET_KEY")
+# Vercel сам задаёт VERCEL=1 в окружении сборки и функций.
+VERCEL = env.bool("VERCEL", default=False)
+
+try:
+    SECRET_KEY = env("SECRET_KEY")
+except ImproperlyConfigured:
+    raise ImproperlyConfigured(
+        "Не задана переменная SECRET_KEY. Локально добавьте её в файл .env, "
+        "на Vercel: Project → Settings → Environment Variables (для всех окружений, она нужна и при сборке). "
+        "Ключ: python -c \"from django.core.management.utils import get_random_secret_key as g; print(g())\""
+    ) from None
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+# Для своего домена с HTTPS (с https://), например https://api.example.com.
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+if VERCEL:
+    ALLOWED_HOSTS.append(".vercel.app")
+    # Vercel терминирует HTTPS сам; без этого Django считает запрос http и вход в админку
+    # падает с «CSRF verification failed».
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -61,6 +80,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+if VERCEL and not env("DATABASE_URL", default=""):
+    # Файловая система функций Vercel временная: SQLite там теряет данные.
+    raise ImproperlyConfigured(
+        "На Vercel нужна внешняя база. Задайте DATABASE_URL (Supabase: Connect → Session pooler), см. README."
+    )
 
 DATABASES = {
     "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
